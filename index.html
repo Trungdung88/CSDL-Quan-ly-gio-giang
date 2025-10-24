@@ -328,22 +328,30 @@
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID, scope: SCOPES, callback: '',
         });
-        gisInited = true; maybeEnableButtons();
+        gisInited = true; 
+        
+        // SỬA LỖI: Di chuyển trình xử lý onclick vào đây.
+        // Điều này đảm bảo tokenClient luôn được định nghĩa
+        // TRƯỚC KHI chúng ta gán sự kiện click cho nút.
+        authorizeButton.onclick = () => {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) { throw (resp); }
+                await updateUIOnAuth();
+                await loadDataFromDrive();
+            };
+            if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } 
+            else { tokenClient.requestAccessToken({prompt: ''}); }
+        };
+        
+        maybeEnableButtons();
     }
     function maybeEnableButtons() {
         if (gapiInited && gisInited) { authorizeButton.style.visibility = 'visible'; }
     }
     
     // --- AUTHENTICATION LOGIC ---
-    authorizeButton.onclick = () => {
-        tokenClient.callback = async (resp) => {
-            if (resp.error !== undefined) { throw (resp); }
-            await updateUIOnAuth();
-            await loadDataFromDrive();
-        };
-        if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } 
-        else { tokenClient.requestAccessToken({prompt: ''}); }
-    };
+    // ĐÃ DI CHUYỂN authorizeButton.onclick LÊN TRÊN VÀO HÀM gisLoaded
+    
     signoutButton.onclick = () => {
         const token = gapi.client.getToken();
         if (token !== null) {
@@ -765,5 +773,6 @@
 
 </body>
 </html>
+
 
 
